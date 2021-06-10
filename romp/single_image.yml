@@ -24,6 +24,6 @@ ARGS:
  demo_image_folder: '/content/drive/MyDrive/TFM/10_Ayagaures' #'../demo/videos/Messi_1'
  output_dir: '../demo/images_results/'
  save_mesh: True
- save_centermap: False
+ save_centermap: True
  save_dict_results: True
  multiprocess: False
