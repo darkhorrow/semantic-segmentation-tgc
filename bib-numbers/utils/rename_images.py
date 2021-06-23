@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import glob
 import os
@@ -15,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--prefix',
                         help='Prefix in the name of the images', required=True)
 
-    parser.add_argument('-v', '--verbose', help='Display info about the progress')
+    parser.add_argument('-v', '--verbose', help='Display info about the progress', action='store_true')
 
     parser.add_argument('--extensions', nargs='+',
                         help='Image format [jpg, png, gif, jpeg, bmp]', default=['jpg', 'png', 'gif', 'jpeg', 'bmp'])
@@ -34,4 +36,5 @@ if __name__ == "__main__":
         _, extension = os.path.splitext(filename)
         new_filename = os.path.join(args.out_path, f'{args.prefix}_{index:{digits}}{extension}')
         shutil.copy(filename, new_filename)
-        print(f'[{index+1}/{len(filenames)}] {filename} --> {new_filename}')
+        if args.verbose:
+            print(f'[{index+1}/{len(filenames)}] {filename} --> {new_filename}')
