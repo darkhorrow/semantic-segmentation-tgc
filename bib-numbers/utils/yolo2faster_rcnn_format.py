@@ -49,14 +49,12 @@ if __name__ == "__main__":
     input_df = pd.read_json(args.json_path)
 
     output_df = pd.DataFrame(columns=OUTPUT_COLS)
-    output_df['filename'] = input_df['filename']
 
-    for row, (path, objects_detected) in enumerate(zip(input_df['filename'], input_df['objects'][:])):
-        for object_detected in objects_detected:
+    row = 0
+
+    for index, (path, objects_detected) in enumerate(zip(input_df['filename'], input_df['objects'][:])):
+        for element, object_detected in enumerate(objects_detected):
             if object_detected['name'] == 'person':
-                row_index = input_df.index[row]
-                output_df['class'] = object_detected['name']
-
                 img = cv2.imread(path)
                 dh, dw, _ = img.shape
 
@@ -79,12 +77,16 @@ if __name__ == "__main__":
                 if b > dh - 1:
                     b = dh - 1
 
-                output_df.loc[row_index, 'x'] = l
-                output_df.loc[row_index, 'y'] = t
-                output_df.loc[row_index, 'x2'] = r
-                output_df.loc[row_index, 'y2'] = b
+                output_df.loc[row, 'class'] = object_detected['name']
+                output_df.loc[row, 'filename'] = path
+                output_df.loc[row, 'x'] = l
+                output_df.loc[row, 'y'] = t
+                output_df.loc[row, 'x2'] = r
+                output_df.loc[row, 'y2'] = b
 
                 if args.verbose:
-                    print(f'[{row+1}/{len(input_df)}] {path}')
+                    print(f'[{row}] {path}')
 
-    output_df.to_csv(args.out_path)
+                row = row + 1
+
+    output_df.to_csv(args.out_path, index=False)
