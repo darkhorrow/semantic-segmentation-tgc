@@ -1,0 +1,2 @@
+F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_2159.jpg 992 256 1056 304 dorsal 96
+F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_2159.jpg 448 416 496 448 dorsal 96
