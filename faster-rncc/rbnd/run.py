@@ -1,258 +1,220 @@
+import argparse
 import glob
 import os.path
 import pickle
 import time
 
 import cv2
-import numpy as np
 import pandas as pd
-# Estaba contensorflow 1.14.0
-# actualizo a 2.4.1, luego 2.3 porque está cuda 10.1 en servidor
-# fijo LD_LIBRARY_PATH para cuda 10.1 y cudnn 7.6.4
-import tensorflow as tf
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
-from .utils.rbndd_utils import *
 from .rbnd_model.base_model import nn_base
-from .rbnd_model.rpn_model import rpn_layer
 from .rbnd_model.classifier_model import classifier_layer
+from .rbnd_model.rpn_model import rpn_layer
+from .utils.rbndd_utils import *
 
 
-tf.config.list_physical_devices('GPU')
+def args_parse():
+    parser = argparse.ArgumentParser()
 
-# Detector
-# Adaptado a portatil
-base_path = '../Modelos/TFG/ModeloTGCdia/'
-config_output_filename = os.path.join(base_path, 'model/model_vgg_config_mode.pickle')  # Original de Pablo sin mode
+    parser.add_argument('-b', '--base_path', help='Base path to the model directory', required=True)
+    parser.add_argument('-c', '--config_path', help='Path to pickle file with VGG model config', required=True)
+    parser.add_argument('-i', '--images_path', help='Path to the test images to use', required=True)
+    parser.add_argument('-o', '--output_path', help='Path to output the predictions performed', required=True)
+    parser.add_argument('-t', '--thresh_score', help='Threshold score to display the bounding box', default=0.7)
+    parser.add_argument('-v', '--verbose', help='Display informative logs', action='store_true')
 
-# Original Pablo
-# base_path = './'
-# config_output_filename = os.path.join(base_path, 'model/model_vgg_config.pickle') # Original de Pablo sin mode
+    args = parser.parse_args()
 
-with open(config_output_filename, 'rb') as f_in:
-    C = pickle.load(f_in)
+    return args.base_path, args.config_path, args.images_path, args.output_path, args.thresh_score, args.verbose
 
-# capa Input del modelo VGG (Imagenes RGB)
-img_input = Input(shape=(None, None, 3))
-# capa Input del modelo RoI Pooling
-roi_input = Input(shape=(C.num_rois, 4))
-# capa Input del modelo clasificador (convolutional feature map (H/stride, W/stride, 512))
-num_features = 512
-feature_map_input = Input(shape=(None, None, num_features))
 
-# define la red base (VGG16)
-shared_layers = nn_base(img_input)
+if __name__ == "__main__":
+    base_path, config_path, images_path, output_path, bbox_threshold, debug = args_parse()
 
-# define el modelo RPN
-num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
-rpn = rpn_layer(shared_layers, num_anchors)
+    with open(config_path, 'rb') as f_in:
+        C = pickle.load(f_in)
 
-# define el modelo clasificador final
-classifier = classifier_layer(feature_map_input, roi_input, C.num_rois, nb_classes=len(C.class_mapping))
+    # Input layer of VGG model (RGB images)
+    img_input = Input(shape=(None, None, 3))
 
-# Creamos los modelos
-model_rpn = Model(img_input, rpn)
-model_classifier = Model([feature_map_input, roi_input], classifier)
+    # Input layer of ROI Pooling model
+    roi_input = Input(shape=(C.num_rois, 4))
 
-print('Loading weights from {}'.format(C.model_path))
-# model_rpn.load_weights(C.model_path, by_name=True)
-model_rpn.load_weights("./model/model_frcnn_vgg.hdf5", by_name=True)
-# model_classifier.load_weights(C.model_path, by_name=True)
-model_classifier.load_weights("./model/model_frcnn_vgg.hdf5", by_name=True)
+    # Input layer of classifier model (convolutional feature map (H/stride, W/stride, 512))
+    num_features = 512
+    feature_map_input = Input(shape=(None, None, num_features))
 
-# se intercambian las parejas <'clase', valor>
-class_mapping = C.class_mapping
-class_mapping = {v: k for k, v in class_mapping.items()}
-print(class_mapping)
+    # Base network (VGG16)
+    shared_layers = nn_base(img_input)
 
-test_base_path = 'C:/Users/otsed/Desktop/Databases/TGC'  # Directory from load the test images
-# imgs_path = os.listdir(test_base_path)
-all_imgs = []
-classes = {}
+    # RPN model
+    num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
+    rpn = rpn_layer(shared_layers, num_anchors)
 
-# threshold score (se ignoran las predicciones con valores de probabilidad menores)
-bbox_threshold = 0.7
+    # Classifier model
+    classifier = classifier_layer(feature_map_input, roi_input, C.num_rois, nb_classes=len(C.class_mapping))
 
-# las predicciones se alamcenan en un dataframe
-column_names = ["name", "xmin", "ymin", "xmax", "ymax", "class", "score"]
-predictions = pd.DataFrame(columns=column_names)
+    # Build models
+    model_rpn = Model(img_input, rpn)
+    model_classifier = Model([feature_map_input, roi_input], classifier)
 
-# lee annotationTest.txt en un Dataframe para marcar los ground-truth bboxes en las imagenes
-if os.path.exists(test_base_path + '/annotateTest.txt'):
-    df_bboxes_gt_test = pd.read_csv(test_base_path + '/annotateTest.txt', sep=",", header=None)
-    df_bboxes_gt_test.columns = ["filename", "xmin", "ymin", "xmax", "ymax", "class"]
-    # agrupa las anotaciones de una misma imagen (columna "filename")
-    gt_grouped_by_filename = df_bboxes_gt_test.groupby('filename')
+    print('Loading weights from {}'.format(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5")))
+    model_rpn.load_weights(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5"), by_name=True)
+    model_classifier.load_weights(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5"), by_name=True)
 
-debug = 0  # 1 to show detections
+    # Exchange key <-> value pairs
+    class_mapping = C.class_mapping
+    class_mapping = {v: k for k, v in class_mapping.items()}
+    print(class_mapping)
 
-################################################
-# Images location
-DatasetPath = "C:/Users/otsed/Desktop/Databases/TGC/"
-DatasetPath = "E:/Datasets/TransGC2020/TGCC-2020-Frames/AnotadaArucas/Frames/"
-DatasetPath = "E:/Datasets/TransGC2020/TGCC-2020-Frames/AnotadaTeror/Frames/"
-# DatasetPath = "E:/Datasets/TransGC2020/TGCC-2020-Frames/AnotadaPresadeHornos/Frames/"
-# DatasetPath = "E:/Datasets/TransGC2020/TGCC-2020-Frames/AnotadaAyagaures/Frames/"
-# DatasetPath = "E:/Datasets/TransGC2020/TGCC-2020-Frames/AnotadaParqueSur/Frames/"
+    all_images = []
+    classes = {}
 
-# CVSPORTS
-DatasetPath = "F:/Datasets/TGCRBNWv0.1UnifiedImgs"
-results_base_path = "F:/Datasets/FasterRCNNResults"
-nframes = 0
+    # Store predictions in a Pandas Dataframe
+    column_names = ["name", "x_min", "y_min", "x_max", "y_max", "class", "score"]
+    predictions = pd.DataFrame(columns=column_names)
 
-for imgfile in glob.glob(DatasetPath + "/*.jpg"):
-    # Load images names
-    nframes += 1
-    # results
-    bibfile = imgfile.replace(".jpg", "_bibs.txt")
-    predictions = []
+    # Writes annotationTest.txt in a Dataframe to draw the ground-truth bounding boxes in the images, if present
+    if os.path.exists(os.path.join(images_path, 'annotateTest.txt')):
+        df_bounding_boxes_gt_test = pd.read_csv(os.path.join(images_path, 'annotateTest.txt'), sep=",", header=None)
+        df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "class"]
+        gt_grouped_by_filename = df_bounding_boxes_gt_test.groupby('filename')
 
-    if os.path.exists(bibfile) == False:
+    for img_file in glob.glob(images_path + "/*.jpg"):
+        bib_file = img_file.replace(".jpg", "_bibs.txt")
+        predictions = []
 
-        img = cv2.imread(imgfile);
-        # detfile = imgfile.replace(".jpg", "_RBNdeetction.txt")
-        # fid = open(detfile, "w")
-        # Captura fotograma
-        t = time.time()
+        if not os.path.exists(bib_file):
 
-        # re-escala la imagen y transforma BGR -> RGB
-        X, ratio = format_img(img, C)
+            img = cv2.imread(img_file)
+            t = time.time()
 
-        # Y1: probabilidad de cada anchor (de incluir un objeto) correspondiente a cada punto del feature map
-        # Y2: deltas del bbox de cada anchor correspondiente a cada punto del feature map
-        # Los valores deltas son codificados con la varianza, p.e. x=(x_gt-x_anc)/(w_anc*var) y w=ln(w_gt/w_anc)/var
-        # F: feature map
-        [Y1, Y2, F] = model_rpn.predict(X)
+            # Rescale image and convert BRG to RGB
+            X, ratio = format_img(img)
 
-        # Corrige los anchores con las predicciones delta del modelo RPN y selecciona bboxes mediante NMS
-        # R.shape = (300, 4)
-        R = rpn_to_roi(Y1, Y2, C, overlap_thresh=0.7)
+            # Y1: Probability of each anchor to include an object corresponding to each feature map point
+            # Y2: Bounding box deltas of each anchor corresponding to each feature map point
+            # Delta values are coded with de variance, i.e. x=(x_gt-x_anc)/(w_anc*var) y w=ln(w_gt/w_anc)/var
+            # F: Feature map
+            [Y1, Y2, F] = model_rpn.predict(X)
 
-        # (x1,y1,x2,y2) => (x,y,w,h)
-        R[:, 2] -= R[:, 0]
-        R[:, 3] -= R[:, 1]
+            # Fixes the anchors with the delta predictions of the RPN model and chooses bounding boxes according to NMS
+            R = rpn_to_roi(Y1, Y2, C, overlap_thresh=0.7)
 
-        # almacena info de los ROI seleccionados
-        bboxes = {}
-        probs = {}
+            # (x1,y1,x2,y2) => (x,y,w,h)
+            R[:, 2] -= R[:, 0]
+            R[:, 3] -= R[:, 1]
 
-        for jk in range(R.shape[0] // C.num_rois + 1):
-            # selecciona los siguientes 4 bboxes
-            ROIs = np.expand_dims(R[C.num_rois * jk:C.num_rois * (jk + 1), :], axis=0)
-            if ROIs.shape[1] == 0:
-                break
+            bounding_boxes = {}
+            probabilities = {}
 
-            if jk == R.shape[0] // C.num_rois:
-                # pad R para incluir 4 ROIs que es la entrada esperada por el clasificador final
-                curr_shape = ROIs.shape
-                target_shape = (curr_shape[0], C.num_rois, curr_shape[2])
-                ROIs_padded = np.zeros(target_shape).astype(ROIs.dtype)
-                ROIs_padded[:, :curr_shape[1], :] = ROIs
-                ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
-                ROIs = ROIs_padded
+            for jk in range(R.shape[0] // C.num_rois + 1):
+                # Gets the next 4 bounding boxes
+                ROIs = np.expand_dims(R[C.num_rois * jk:C.num_rois * (jk + 1), :], axis=0)
+                if ROIs.shape[1] == 0:
+                    break
 
-            # F: feature maps
-            # P_cls (4x2): score de cada ROI (4 ROI de entrada) y para cada clase (incluyendo la 'bg')
-            # P_regr (4x4): deltas bbox (4 values) para cada clase y para cada ROI (4 ROI de entrada)
-            [P_cls, P_regr] = model_classifier.predict([F, ROIs])
+                if jk == R.shape[0] // C.num_rois:
+                    # Pad R to include 4 ROIs to be fed to the classifier input
+                    curr_shape = ROIs.shape
+                    target_shape = (curr_shape[0], C.num_rois, curr_shape[2])
+                    ROIs_padded = np.zeros(target_shape).astype(ROIs.dtype)
+                    ROIs_padded[:, :curr_shape[1], :] = ROIs
+                    ROIs_padded[0, curr_shape[1]:, :] = ROIs[0, 0, :]
+                    ROIs = ROIs_padded
 
-            # Calcula coordenadas bboxes en la imagen original
-            for ii in range(P_cls.shape[1]):
-                # Ignora ROI con (score<bbox_threshold) or (ROI con clase 'bg')
-                cls_num = np.argmax(P_cls[0, ii, :])
-                if np.max(P_cls[0, ii, :]) < bbox_threshold or cls_num == (P_cls.shape[2] - 1):
-                    continue
+                # F: feature maps
+                # P_cls (4x2): Score of each ROI and each class (including 'bg')
+                # P_regress (4x4): Deltas bounding box (4 values) for each class and ROI
+                [P_cls, P_regress] = model_classifier.predict([F, ROIs])
 
-                cls_name = class_mapping[cls_num]  # nombre asignado a la clase
-                if cls_name not in bboxes:
-                    bboxes[cls_name] = []
-                    probs[cls_name] = []
+                # Calculate de bounding box coordinates in the original image
+                for ii in range(P_cls.shape[1]):
+                    # Ignore ROI with (score < bbox_threshold) or (ROI class 'bg')
+                    cls_num = np.argmax(P_cls[0, ii, :])
+                    if np.max(P_cls[0, ii, :]) < bbox_threshold or cls_num == (P_cls.shape[2] - 1):
+                        continue
 
-                (x, y, w, h) = ROIs[0, ii, :]
-                try:
-                    # extrae deltas predecidos por el clasificador final para este ROI
-                    (tx, ty, tw, th) = P_regr[0, ii, 4 * cls_num:4 * (cls_num + 1)]
-                    tx /= C.classifier_regr_std[0]
-                    ty /= C.classifier_regr_std[1]
-                    tw /= C.classifier_regr_std[2]
-                    th /= C.classifier_regr_std[3]
-                    # corregimos bbox del ROI
-                    x, y, w, h = apply_regr_classfinal(x, y, w, h, tx, ty, tw, th)
-                except:
-                    pass
+                    cls_name = class_mapping[cls_num]
+                    if cls_name not in bounding_boxes:
+                        bounding_boxes[cls_name] = []
+                        probabilities[cls_name] = []
 
-                # almacenamos coordenadas de bboxes y scores del ROI
-                bboxes[cls_name].append(
-                    [C.rpn_stride * x, C.rpn_stride * y, C.rpn_stride * (x + w), C.rpn_stride * (y + h)])
-                probs[cls_name].append(np.max(P_cls[0, ii, :]))
+                    (x, y, w, h) = ROIs[0, ii, :]
 
-            # aplica NMS sobre los bboxes detectados y dibuja el resultado en la imagen
-        all_dets = []  # almacena las detecciones
-        fid = open(bibfile, "w")
+                    try:
+                        # Extract deltas
+                        (tx, ty, tw, th) = P_regress[0, ii, 4 * cls_num:4 * (cls_num + 1)]
+                        tx /= C.classifier_regr_std[0]
+                        ty /= C.classifier_regr_std[1]
+                        tw /= C.classifier_regr_std[2]
+                        th /= C.classifier_regr_std[3]
 
-        for key in bboxes:
-            bbox = np.array(bboxes[key])
+                        # ROI bounding box correction
+                        x, y, w, h = apply_regress_class_final(x, y, w, h, tx, ty, tw, th)
+                    except Exception as error:
+                        print(error)
 
-            new_boxes, new_probs = non_max_suppression_fast(bbox, np.array(probs[key]), overlap_thresh=0.2)
+                    # Store results of bounding boxes and scores
+                    bounding_boxes[cls_name].append(
+                        [C.rpn_stride * x, C.rpn_stride * y, C.rpn_stride * (x + w), C.rpn_stride * (y + h)])
+                    probabilities[cls_name].append(np.max(P_cls[0, ii, :]))
 
-            for jk in range(new_boxes.shape[0]):
-                (x1, y1, x2, y2) = new_boxes[jk, :]
+            all_detects = []
+            with open(bib_file, "w") as fid:
+                for key in bounding_boxes:
+                    bbox = np.array(bounding_boxes[key])
 
-                # Calcula coordenadas en la imagen original y dibuja bbox detectado
-                (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
-                cv2.rectangle(img, (real_x1, real_y1), (real_x2, real_y2), (0, 0, 255), 2)
-                # detection data to txt file coordinates and confidence
-                fid.write("%d %d %d %d %d\n" % (real_x1, real_y1, real_x2, real_y2, int(100 * new_probs[jk])))
+                    new_boxes, new_probabilities = non_max_suppression_fast(bbox, np.array(probabilities[key]), 0.2)
 
-                textLabel = '{}: {}'.format("confianza", int(100 * new_probs[jk]))
-                all_dets.append((key, 100 * new_probs[jk]))
+                    for jk in range(new_boxes.shape[0]):
+                        (x1, y1, x2, y2) = new_boxes[jk, :]
 
-                # muestra el string "textLabel" junto al bbox detectado
-                (retval, baseLine) = cv2.getTextSize(textLabel, cv2.FONT_HERSHEY_DUPLEX, 0.5, 1)
-                textOrg = (real_x1, real_y1)
-                xxx1 = textOrg[0] - 0
-                yyy1 = textOrg[1] + baseLine - 0
-                xxx2 = textOrg[0] + retval[0] + 0
-                yyy2 = textOrg[1] - retval[1] - 0
-                if xxx1 < 0 or yyy1 < 0 or xxx2 < 0 or yyy2 < 0:
-                    textOrg = (real_x2, real_y2)
-                    xxx1 = textOrg[0] - retval[0] - 0
-                    yyy1 = textOrg[1] + retval[1] + 0
-                    xxx2 = textOrg[0] + 0
-                    yyy2 = textOrg[1] - baseLine + 0
-                    textOrg = (xxx1, yyy1 - baseLine)
+                        # Calculate coordinates in the original image and draw the detected bounding box
+                        (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
+                        cv2.rectangle(img, (real_x1, real_y1), (real_x2, real_y2), (0, 0, 255), 2)
 
-                cv2.rectangle(img, (xxx1, yyy1), (xxx2, yyy2), (0, 0, 0), 1)
-                cv2.rectangle(img, (xxx1, yyy1), (xxx2, yyy2), (255, 255, 255), -1)
-                cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 1)
+                        # Detection data to txt file coordinates and confidence
+                        fid.write("%d %d %d %d %d\n" %
+                                  (real_x1, real_y1, real_x2, real_y2, int(100 * new_probabilities[jk])))
 
-                predictions.append(
-                    {"name": imgfile, "xmin": real_x1, "ymin": real_y1, "xmax": real_x2, "ymax": real_y2, "class": key,
-                     "score": int(100 * new_probs[jk])})
+                        textLabel = '{}: {}'.format("Score", int(100 * new_probabilities[jk]))
+                        all_detects.append((key, 100 * new_probabilities[jk]))
 
-            # almacena la imagen en disco
-            aux_filename = DatasetPath
-            print(results_base_path + '/' + (imgfile.split(aux_filename)[1])[1:])
-            cv2.imwrite(results_base_path + '/' + (imgfile.split(aux_filename)[1])[1:], img)
+                        (ret_val, baseLine) = cv2.getTextSize(textLabel, cv2.FONT_HERSHEY_DUPLEX, 0.5, 1)
+                        textOrg = (real_x1, real_y1)
+                        xxx1 = textOrg[0] - 0
+                        yyy1 = textOrg[1] + baseLine - 0
+                        xxx2 = textOrg[0] + ret_val[0] + 0
+                        yyy2 = textOrg[1] - ret_val[1] - 0
+                        if xxx1 < 0 or yyy1 < 0 or xxx2 < 0 or yyy2 < 0:
+                            textOrg = (real_x2, real_y2)
+                            xxx1 = textOrg[0] - ret_val[0] - 0
+                            yyy1 = textOrg[1] + ret_val[1] + 0
+                            xxx2 = textOrg[0] + 0
+                            yyy2 = textOrg[1] - baseLine + 0
+                            textOrg = (xxx1, yyy1 - baseLine)
 
-            with open(results_base_path + '/' + ((imgfile.split(aux_filename)[1])[1:]).replace('.jpg', '.txt'),
-                      'w') as p_file:
-                for prediction in predictions:
-                    p_file.write(
-                        f'{prediction["name"]} {prediction["xmin"]} {prediction["ymin"]} {prediction["xmax"]} {prediction["ymax"]} {prediction["class"]} {prediction["score"]}\n')
+                        cv2.rectangle(img, (xxx1, yyy1), (xxx2, yyy2), (0, 0, 0), 1)
+                        cv2.rectangle(img, (xxx1, yyy1), (xxx2, yyy2), (255, 255, 255), -1)
+                        cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 1)
 
-        fid.close()
+                        predictions.append(
+                            {
+                                "name": img_file,
+                                "x_min": real_x1,
+                                "y_min": real_y1,
+                                "x_max": real_x2,
+                                "y_max": real_y2,
+                                "class": key,
+                                "score": int(100 * new_probabilities[jk])
+                            }
+                        )
 
-        if debug:
-            print("tiempo de procesamiento : {:.3f}".format(time.time() - t))
-            cv2.imshow("Normalized", img)
+                    # Store the image with the detection
+                    cv2.imwrite(os.path.join(output_path, os.path.basename(img_file)), img)
 
-    # Finaliza pulsando q
-    tec = cv2.waitKey(4)
-    # ESc para terminar
-    if tec & tec == 27:  # Esc
-        break
-
-# Libera al detener
-cv2.destroyAllWindows()
+                if debug:
+                    print("Elapsed time: {:.3f}".format(time.time() - t))
