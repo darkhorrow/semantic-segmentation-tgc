@@ -3,16 +3,18 @@ import glob
 import os.path
 import pickle
 import time
+import numpy as np
 
 import cv2
 import pandas as pd
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
-from .rbnd_model.base_model import nn_base
-from .rbnd_model.classifier_model import classifier_layer
-from .rbnd_model.rpn_model import rpn_layer
-from .utils.rbndd_utils import *
+from rbnd_model.base_model import nn_base
+from rbnd_model.classifier_model import classifier_layer
+from rbnd_model.rpn_model import rpn_layer
+from rbnd_model.config import Config
+from utils.rbndd_utils import *
 
 
 def args_parse():
@@ -60,9 +62,9 @@ if __name__ == "__main__":
     model_rpn = Model(img_input, rpn)
     model_classifier = Model([feature_map_input, roi_input], classifier)
 
-    print('Loading weights from {}'.format(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5")))
-    model_rpn.load_weights(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5"), by_name=True)
-    model_classifier.load_weights(os.path.join(base_path, "/model/model_frcnn_vgg.hdf5"), by_name=True)
+    print('Loading weights from {}'.format(os.path.join(base_path, "model", "model_frcnn_vgg.hdf5")))
+    model_rpn.load_weights(os.path.join(base_path, "model", "model_frcnn_vgg.hdf5"), by_name=True)
+    model_classifier.load_weights(os.path.join(base_path, "model", "model_frcnn_vgg.hdf5"), by_name=True)
 
     # Exchange key <-> value pairs
     class_mapping = C.class_mapping
@@ -163,6 +165,7 @@ if __name__ == "__main__":
                     probabilities[cls_name].append(np.max(P_cls[0, ii, :]))
 
             all_detects = []
+
             with open(bib_file, "w") as fid:
                 for key in bounding_boxes:
                     bbox = np.array(bounding_boxes[key])
@@ -214,6 +217,7 @@ if __name__ == "__main__":
                         )
 
                     # Store the image with the detection
+                    print(os.path.join(output_path, os.path.basename(img_file)))
                     cv2.imwrite(os.path.join(output_path, os.path.basename(img_file)), img)
 
                 if debug:
