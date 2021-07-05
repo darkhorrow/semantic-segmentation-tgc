@@ -214,8 +214,8 @@ def rpn_to_roi(out_rpn_cls, out_rpn_regr, C, max_boxes=300, overlap_thresh=0.9):
 
     # Non_max_suppression to get only the bounding boxes
     result = non_max_suppression_fast(all_boxes, all_probabilities,
-                                      overlap_thresh=overlap_thresh, max_boxes=max_boxes)[0]
-    return result
+                                      overlap_thresh=overlap_thresh, max_boxes=max_boxes)
+    return result[0] if len(result) > 0 else None
 
 
 def format_img_channels(img):

@@ -3,7 +3,6 @@ import glob
 import os.path
 import pickle
 import time
-import numpy as np
 
 import cv2
 import pandas as pd
@@ -86,7 +85,6 @@ if __name__ == "__main__":
 
     for img_file in glob.glob(images_path + "/*.jpg"):
         bib_file = img_file.replace(".jpg", "_bibs.txt")
-        predictions = []
 
         if not os.path.exists(bib_file):
 
@@ -104,6 +102,10 @@ if __name__ == "__main__":
 
             # Fixes the anchors with the delta predictions of the RPN model and chooses bounding boxes according to NMS
             R = rpn_to_roi(Y1, Y2, C, overlap_thresh=0.7)
+
+            if isinstance(R, type(None)):
+                print(f'Error processing {img_file}, using next image.')
+                continue
 
             # (x1,y1,x2,y2) => (x,y,w,h)
             R[:, 2] -= R[:, 0]
@@ -204,7 +206,7 @@ if __name__ == "__main__":
                         cv2.rectangle(img, (xxx1, yyy1), (xxx2, yyy2), (255, 255, 255), -1)
                         cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 0.5, (0, 0, 0), 1)
 
-                        predictions.append(
+                        predictions = predictions.append(
                             {
                                 "name": img_file,
                                 "x_min": real_x1,
@@ -213,7 +215,8 @@ if __name__ == "__main__":
                                 "y_max": real_y2,
                                 "class": key,
                                 "score": int(100 * new_probabilities[jk])
-                            }
+                            },
+                            ignore_index=True
                         )
 
                     # Store the image with the detection
@@ -222,3 +225,5 @@ if __name__ == "__main__":
 
                 if debug:
                     print("Elapsed time: {:.3f}".format(time.time() - t))
+
+    predictions.to_csv(os.path.join(output_path, 'predictions.csv'))
