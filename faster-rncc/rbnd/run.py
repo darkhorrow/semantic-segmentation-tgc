@@ -88,6 +88,9 @@ if __name__ == "__main__":
 
         if not os.path.exists(bib_file):
 
+            if debug:
+                print(f'Processing {img_file}')
+
             img = cv2.imread(img_file)
             t = time.time()
 
@@ -170,6 +173,9 @@ if __name__ == "__main__":
 
             with open(bib_file, "w") as fid:
                 for key in bounding_boxes:
+                    if debug:
+                        print(f'Bounding box: {key}')
+
                     bbox = np.array(bounding_boxes[key])
 
                     new_boxes, new_probabilities = non_max_suppression_fast(bbox, np.array(probabilities[key]), 0.2)
