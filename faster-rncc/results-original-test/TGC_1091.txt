@@ -1,7 +1,0 @@
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1088 656 1152 704 dorsal 98
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1088 496 1152 560 dorsal 96
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1760 528 1792 560 dorsal 89
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1680 352 1744 384 dorsal 87
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 528 608 576 640 dorsal 87
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1424 288 1456 304 dorsal 80
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1091.jpg 1312 272 1344 304 dorsal 73

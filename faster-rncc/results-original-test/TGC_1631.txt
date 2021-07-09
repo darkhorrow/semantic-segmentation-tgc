@@ -1,4 +1,0 @@
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1631.jpg 1664 336 1728 384 dorsal 96
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1631.jpg 800 752 880 816 dorsal 92
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1631.jpg 1744 528 1792 560 dorsal 89
-F:/Datasets/TGCRBNWv0.1UnifiedImgs\TGC_1631.jpg 512 608 560 640 dorsal 84
