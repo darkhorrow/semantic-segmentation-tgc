@@ -15,7 +15,7 @@ if __name__ == "__main__":
                         help='Target path to store new images', required=True)
 
     parser.add_argument('-p', '--prefix',
-                        help='Prefix in the name of the images', required=True)
+                        help='Prefix in the name of the images. If empty, original image name is used instead')
 
     parser.add_argument('-v', '--verbose', help='Display info about the progress', action='store_true')
 
@@ -34,7 +34,10 @@ if __name__ == "__main__":
 
     for index, filename in enumerate(filenames):
         _, extension = os.path.splitext(filename)
-        new_filename = os.path.join(args.out_path, f'{args.prefix}_{index:{digits}}{extension}')
-        shutil.copy(filename, new_filename)
+        new_filename = f'{args.prefix}_{index:{digits}}{extension}' \
+            if args.prefix is not None else os.path.basename(filename)
+        new_filepath = os.path.join(args.out_path, new_filename)
+
+        shutil.copy(filename, new_filepath)
         if args.verbose:
-            print(f'[{index+1}/{len(filenames)}] {filename} --> {new_filename}')
+            print(f'[{index + 1}/{len(filenames)}] {filename} --> {new_filepath}')
