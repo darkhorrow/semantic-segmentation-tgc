@@ -225,6 +225,8 @@ if __name__ == "__main__":
                             ignore_index=True
                         )
 
+                        print(predictions)
+
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
                     cv2.imwrite(os.path.join(output_path, os.path.basename(img_file)), img)
