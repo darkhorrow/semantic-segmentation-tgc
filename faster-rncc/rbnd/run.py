@@ -8,6 +8,7 @@ import cv2
 import pandas as pd
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
+from mean_average_precision import MetricBuilder
 
 from rbnd_model.base_model import nn_base
 from rbnd_model.classifier_model import classifier_layer
@@ -77,11 +78,12 @@ if __name__ == "__main__":
     column_names = ["name", "x_min", "y_min", "x_max", "y_max", "class", "score"]
     predictions = pd.DataFrame(columns=column_names)
 
+    df_bounding_boxes_gt_test = None
+
     # Writes annotationTest.txt in a Dataframe to draw the ground-truth bounding boxes in the images, if present
-    if os.path.exists(os.path.join(images_path, 'annotateTest.txt')):
-        df_bounding_boxes_gt_test = pd.read_csv(os.path.join(images_path, 'annotateTest.txt'), sep=",", header=None)
+    if os.path.exists(os.path.join(images_path, 'annotateTest.csv')):
+        df_bounding_boxes_gt_test = pd.read_csv(os.path.join(images_path, 'annotateTest.csv'), sep=",", header=None)
         df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "class"]
-        gt_grouped_by_filename = df_bounding_boxes_gt_test.groupby('filename')
 
     for img_file in glob.glob(images_path + "/*.jpg"):
         bib_file = img_file.replace(".jpg", "_bibs.txt")
@@ -226,6 +228,17 @@ if __name__ == "__main__":
                         )
 
                         print(predictions)
+
+                    # Calculate mAP
+                    if df_bounding_boxes_gt_test is not None:
+                        gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
+                        gt_bounding_boxes = gt_bounding_boxes.to_numpy()
+
+                        predicted_bounding_boxes = predictions.to_numpy()
+
+                        metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=1)
+                        metric_fn.add(predicted_bounding_boxes, gt_bounding_boxes)
+                        print(f"VOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.5)['mAP']}")
 
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
