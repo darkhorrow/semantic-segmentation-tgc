@@ -178,9 +178,8 @@ if __name__ == "__main__":
             with open(bib_file, "w") as fid:
                 # Draw true ground bounding boxes
                 if df_bounding_boxes_gt_test is not None:
-                    gt_bounding_boxes = df_bounding_boxes_gt_test[
-                        df_bounding_boxes_gt_test['filename'] == img_file]
-                    for row in df_bounding_boxes_gt_test.itertuples():
+                    gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
+                    for row in gt_bounding_boxes.itertuples():
                         cv2.rectangle(img, (row.x_min, row.y_min), (row.x_max, row.y_max), (0, 255, 0), 2)
 
                 for key in bounding_boxes:
@@ -252,7 +251,7 @@ if __name__ == "__main__":
                         metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=False, num_classes=1)
                         metric_fn.add(predicted_bounding_boxes, gt_bounding_boxes)
 
-                        print(f"VOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.6)}")
+                        print(f"\nVOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.5)['mAP']}\n")
 
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
