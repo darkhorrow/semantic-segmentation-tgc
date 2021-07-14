@@ -83,7 +83,9 @@ if __name__ == "__main__":
     # Writes annotationTest.txt in a Dataframe to draw the ground-truth bounding boxes in the images, if present
     if os.path.exists(os.path.join(images_path, 'annotateTest.csv')):
         df_bounding_boxes_gt_test = pd.read_csv(os.path.join(images_path, 'annotateTest.csv'), sep=",", header=None)
-        df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "class"]
+        df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "class", "number"]
+        df_bounding_boxes_gt_test['difficulty'] = 0
+        df_bounding_boxes_gt_test['crowd'] = 0
 
     for img_file in glob.glob(images_path + "/*.jpg"):
         bib_file = img_file.replace(".jpg", "_bibs.txt")
@@ -232,12 +234,15 @@ if __name__ == "__main__":
                     # Calculate mAP
                     if df_bounding_boxes_gt_test is not None:
                         gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
+                        gt_bounding_boxes = gt_bounding_boxes.drop(['number', 'filename'], axis=1)
                         gt_bounding_boxes = gt_bounding_boxes.to_numpy()
 
-                        predicted_bounding_boxes = predictions.to_numpy()
+                        predictions_df = predictions.drop('name', axis=1)
+                        predicted_bounding_boxes = predictions_df.to_numpy()
 
-                        metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=True, num_classes=1)
+                        metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=False, num_classes=1)
                         metric_fn.add(predicted_bounding_boxes, gt_bounding_boxes)
+
                         print(f"VOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.5)['mAP']}")
 
                     # Store the image with the detection
