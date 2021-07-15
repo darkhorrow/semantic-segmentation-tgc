@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # Writes annotationTest.txt in a Dataframe to draw the ground-truth bounding boxes in the images, if present
     if os.path.exists(os.path.join(images_path, 'annotateTest.csv')):
         df_bounding_boxes_gt_test = pd.read_csv(os.path.join(images_path, 'annotateTest.csv'), sep=",", header=None)
-        df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "class", "number"]
+        df_bounding_boxes_gt_test.columns = ["filename", "x_min", "y_min", "x_max", "y_max", "number"]
         df_bounding_boxes_gt_test['difficulty'] = 0
         df_bounding_boxes_gt_test['crowd'] = 0
 
