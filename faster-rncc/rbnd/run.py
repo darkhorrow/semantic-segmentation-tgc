@@ -78,6 +78,9 @@ if __name__ == "__main__":
     column_names = ["name", "x_min", "y_min", "x_max", "y_max", "class", "score"]
     predictions = pd.DataFrame(columns=column_names)
 
+    # Store metrics in a Pandas Dataframe
+    metrics = pd.DataFrame(columns=['filename', 'mAP'])
+
     df_bounding_boxes_gt_test = None
 
     # Writes annotationTest.txt in a Dataframe to draw the ground-truth bounding boxes in the images, if present
@@ -253,6 +256,14 @@ if __name__ == "__main__":
 
                         print(f"\nVOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.5)['mAP']}\n")
 
+                        metrics = metrics.append(
+                            {
+                                "filename": img_file,
+                                "mAP": metric_fn.value(iou_thresholds=0.5)['mAP']
+                            },
+                            ignore_index=True
+                        )
+
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
                     cv2.imwrite(os.path.join(output_path, os.path.basename(img_file)), img)
@@ -261,3 +272,4 @@ if __name__ == "__main__":
                     print("Elapsed time: {:.3f}".format(time.time() - t))
 
     predictions.to_csv(os.path.join(output_path, 'predictions.csv'))
+    metrics.to_csv(os.path.join(output_path, 'metrics.csv'))
