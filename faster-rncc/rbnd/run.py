@@ -186,9 +186,6 @@ if __name__ == "__main__":
                         cv2.rectangle(img, (row.x_min, row.y_min), (row.x_max, row.y_max), (0, 255, 0), 2)
 
                 for key in bounding_boxes:
-                    if debug:
-                        print(f'Bounding box: {key}')
-
                     bbox = np.array(bounding_boxes[key])
 
                     new_boxes, new_probabilities = non_max_suppression_fast(bbox, np.array(probabilities[key]), 0.2)
@@ -237,8 +234,6 @@ if __name__ == "__main__":
                             },
                             ignore_index=True
                         )
-
-                        print(predictions)
 
                     # Calculate mAP
                     if df_bounding_boxes_gt_test is not None:
