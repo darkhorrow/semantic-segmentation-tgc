@@ -242,7 +242,8 @@ if __name__ == "__main__":
                         gt_bounding_boxes['class'] = 0
                         gt_bounding_boxes = gt_bounding_boxes.to_numpy()
 
-                        predictions_df = predictions.drop('name', axis=1)
+                        predictions_df = predictions[predictions['name'] == img_file]
+                        predictions_df = predictions_df.drop('name', axis=1)
                         predictions_df['class'] = 0
                         predicted_bounding_boxes = predictions_df.to_numpy()
 
