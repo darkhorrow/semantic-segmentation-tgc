@@ -32,6 +32,7 @@ if __name__ == "__main__":
                 for line in file.readlines():
                     out.write(line)
                     n_lines += 1
+            out.write('\n')
 
             if args.verbose:
                 print(f'[{index + 1}/{size}] {filename}\nLines read: {n_lines}')
