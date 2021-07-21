@@ -15,6 +15,7 @@ from rbnd_model.classifier_model import classifier_layer
 from rbnd_model.rpn_model import rpn_layer
 from rbnd_model.config import Config
 from utils.rbndd_utils import *
+from utils.metrics_calculation import iou
 
 
 def args_parse():
