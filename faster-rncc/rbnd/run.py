@@ -15,7 +15,7 @@ from rbnd_model.classifier_model import classifier_layer
 from rbnd_model.rpn_model import rpn_layer
 from rbnd_model.config import Config
 from utils.rbndd_utils import *
-from utils.metrics_calculation import iou
+from utils.metrics_calculation import calculate_metrics
 
 
 def args_parse():
@@ -260,6 +260,8 @@ if __name__ == "__main__":
                             },
                             ignore_index=True
                         )
+
+                        calculate_metrics(gt_bounding_boxes[:, 0:4], predicted_bounding_boxes)
 
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
