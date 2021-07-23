@@ -12,11 +12,11 @@ def get_recall(true_positives, false_negatives):
 def get_f1_score(true_positives, false_positives, false_negatives):
     precision = get_precision(true_positives, false_positives)
     recall = get_recall(true_positives, false_negatives)
-    return 2 * (precision * recall) / (precision + recall)
+    return 2 * (precision * recall) / (precision + recall) if precision > 0 or recall > 0 else 0
 
 
 def get_f1_score_with_pr(precision, recall):
-    return 2 * (precision * recall) / (precision + recall)
+    return 2 * (precision * recall) / (precision + recall) if precision > 0 or recall > 0 else 0
 
 
 def set_diff(a, b):
@@ -91,4 +91,4 @@ def calculate_metrics(ground_truths, detections, iou_threshold=0.5):
     recall = get_recall(true_positives, false_negative)
     f_score = get_f1_score_with_pr(precision, recall)
 
-    return precision, recall, f_score
+    return (true_positives, false_positive, false_negative), (precision, recall, f_score)

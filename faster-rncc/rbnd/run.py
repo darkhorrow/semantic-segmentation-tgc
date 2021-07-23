@@ -14,7 +14,7 @@ from rbnd_model.classifier_model import classifier_layer
 from rbnd_model.rpn_model import rpn_layer
 from rbnd_model.config import Config
 from utils.rbndd_utils import *
-from utils.metrics_calculation import calculate_metrics
+from utils.metrics_calculation import calculate_metrics, get_precision, get_recall, get_f1_score
 
 
 def args_parse():
@@ -253,15 +253,22 @@ if __name__ == "__main__":
                         predictions_df['class'] = 0
                         predicted_bounding_boxes = predictions_df.to_numpy()
 
-                        precision, recall, f1_score = calculate_metrics(gt_bounding_boxes[:, 0:4],
-                                                                        predicted_bounding_boxes[:, 0:4])
+                        (tp, fp, fn), (p, r, f1s) = calculate_metrics(gt_bounding_boxes[:, 0:4],
+                                                                      predicted_bounding_boxes[:, 0:4])
+
+                        if debug:
+                            print(tp, fp, fn, p, r, f1s)
+
+                        true_positives += tp
+                        false_positives += fp
+                        false_negatives += fn
 
                         metrics = metrics.append(
                             {
                                 "filename": img_file,
-                                "precision": precision,
-                                "recall": recall,
-                                "f1_score": f1_score
+                                "precision": p,
+                                "recall": r,
+                                "f1_score": f1s
                             },
                             ignore_index=True
                         )
@@ -273,5 +280,15 @@ if __name__ == "__main__":
                 if debug:
                     print("Elapsed time: {:.3f}".format(time.time() - t))
 
+    final_metric = final_metric.append(
+        {
+            "precision": get_precision(true_positives, false_positives),
+            "recall": get_recall(true_positives, false_negatives),
+            "f1_score": get_f1_score(true_positives, false_positives, false_negatives)
+        },
+        ignore_index=True
+    )
+
     predictions.to_csv(os.path.join(output_path, 'predictions.csv'))
     metrics.to_csv(os.path.join(output_path, 'metrics.csv'))
+    final_metric.to_csv(os.path.join(output_path, 'final_metrics.csv'))
