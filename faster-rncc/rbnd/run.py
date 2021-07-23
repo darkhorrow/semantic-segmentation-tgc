@@ -8,7 +8,6 @@ import cv2
 import pandas as pd
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
-from mean_average_precision import MetricBuilder
 
 from rbnd_model.base_model import nn_base
 from rbnd_model.classifier_model import classifier_layer
@@ -80,7 +79,13 @@ if __name__ == "__main__":
     predictions = pd.DataFrame(columns=column_names)
 
     # Store metrics in a Pandas Dataframe
-    metrics = pd.DataFrame(columns=['filename', 'mAP'])
+    metrics = pd.DataFrame(columns=['filename', 'precision', 'recall', 'f1_score'])
+
+    # Store separately the global metric result
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    final_metric = pd.DataFrame(columns=['precision', 'recall', 'f1_score'])
 
     df_bounding_boxes_gt_test = None
 
@@ -248,20 +253,18 @@ if __name__ == "__main__":
                         predictions_df['class'] = 0
                         predicted_bounding_boxes = predictions_df.to_numpy()
 
-                        metric_fn = MetricBuilder.build_evaluation_metric("map_2d", async_mode=False, num_classes=1)
-                        metric_fn.add(predicted_bounding_boxes, gt_bounding_boxes)
-
-                        print(f"\nVOC PASCAL mAP in all points: {metric_fn.value(iou_thresholds=0.5)['mAP']}\n")
+                        precision, recall, f1_score = calculate_metrics(gt_bounding_boxes[:, 0:4],
+                                                                        predicted_bounding_boxes[:, 0:4])
 
                         metrics = metrics.append(
                             {
                                 "filename": img_file,
-                                "mAP": metric_fn.value(iou_thresholds=0.5)['mAP']
+                                "precision": precision,
+                                "recall": recall,
+                                "f1_score": f1_score
                             },
                             ignore_index=True
                         )
-
-                        calculate_metrics(gt_bounding_boxes[:, 0:4], predicted_bounding_boxes)
 
                     # Store the image with the detection
                     print(os.path.join(output_path, os.path.basename(img_file)))
