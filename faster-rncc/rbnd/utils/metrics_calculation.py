@@ -1,13 +1,12 @@
 import numpy as np
-from shapely.geometry import Polygon
 
 
 def get_precision(true_positives, false_positives):
-    return true_positives / (true_positives + false_positives)
+    return true_positives / (true_positives + false_positives) if true_positives > 0 or false_positives > 0 else 0
 
 
 def get_recall(true_positives, false_negatives):
-    return true_positives / (true_positives + false_negatives)
+    return true_positives / (true_positives + false_negatives) if true_positives > 0 or false_negatives > 0 else 0
 
 
 def get_f1_score(true_positives, false_positives, false_negatives):
@@ -48,6 +47,8 @@ def iou(ground_truth, detection, threshold=0.5):
 
     result = intersection_area / union_area
 
+    print(result)
+
     return result >= threshold
 
 
@@ -64,14 +65,14 @@ def calculate_metrics(ground_truths, detections, iou_threshold=0.5):
         precision = get_precision(true_positives, false_positive)
         recall = get_recall(true_positives, false_negative)
         f_score = get_f1_score_with_pr(precision, recall)
-        return precision, recall, f_score
+        return (true_positives, false_positive, false_negative), (precision, recall, f_score)
 
     if detections is None or len(detections) == 0:
         false_negative += len(ground_truths)
         precision = get_precision(true_positives, false_positive)
         recall = get_recall(true_positives, false_negative)
         f_score = get_f1_score_with_pr(precision, recall)
-        return precision, recall, f_score
+        return (true_positives, false_positive, false_negative), (precision, recall, f_score)
 
     for ground_truth in ground_truths:
         for detection in detections:
