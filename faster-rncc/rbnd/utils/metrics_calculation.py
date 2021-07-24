@@ -1,4 +1,5 @@
 import numpy as np
+from shapely.geometry import Polygon
 
 
 def get_precision(true_positives, false_positives):
@@ -38,10 +39,10 @@ def iou(ground_truth, detection, threshold=0.5):
     x_min = min(ground_truth[2], detection[2])
     y_min = min(ground_truth[3], detection[3])
 
-    intersection_area = max(0, x_min - x_max + 1) * max(0, y_min - y_max + 1)
+    intersection_area = max(0, x_min - x_max) * max(0, y_min - y_max)
 
-    ground_truth_area = (ground_truth[2] - ground_truth[0] + 1) * (ground_truth[3] - ground_truth[1] + 1)
-    detection_area = (detection[2] - detection[0] + 1) * (detection[3] - detection[1] + 1)
+    ground_truth_area = (ground_truth[2] - ground_truth[0]) * (ground_truth[3] - ground_truth[1])
+    detection_area = (detection[2] - detection[0]) * (detection[3] - detection[1])
 
     union_area = ground_truth_area + detection_area - intersection_area
 
