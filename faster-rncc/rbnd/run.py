@@ -190,7 +190,47 @@ if __name__ == "__main__":
                     gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
                     for row in gt_bounding_boxes.itertuples():
                         cv2.rectangle(img, (row.x_min, row.y_min), (row.x_max, row.y_max), (0, 255, 0), 2)
+                # No detections performed
+                if len(bounding_boxes) == 0:
+                    print('No detections for this image')
+                    # Calculate mAP
+                    if df_bounding_boxes_gt_test is not None:
+                        gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
+                        gt_bounding_boxes = gt_bounding_boxes.drop(['filename'], axis=1)
+                        gt_bounding_boxes['class'] = 0
+                        gt_bounding_boxes = gt_bounding_boxes.to_numpy()
 
+                        print(gt_bounding_boxes)
+
+                        predictions_df = predictions[predictions['name'] == img_file]
+                        predictions_df = predictions_df.drop('name', axis=1)
+                        predictions_df['class'] = 0
+                        predicted_bounding_boxes = predictions_df.to_numpy()
+                        print(predicted_bounding_boxes)
+
+                        (tp, fp, fn), (p, r, f1s) = calculate_metrics(gt_bounding_boxes[:, 0:4],
+                                                                      predicted_bounding_boxes[:, 0:4])
+
+                        if debug:
+                            print(tp, fp, fn, p, r, f1s)
+
+                        true_positives += tp
+                        false_positives += fp
+                        false_negatives += fn
+
+                        print(true_positives, false_positives, false_negatives)
+
+                        metrics = metrics.append(
+                            {
+                                "filename": img_file,
+                                "precision": p,
+                                "recall": r,
+                                "f1_score": f1s
+                            },
+                            ignore_index=True
+                        )
+
+                # In case detections exist
                 for key in bounding_boxes:
                     bbox = np.array(bounding_boxes[key])
 
@@ -262,6 +302,8 @@ if __name__ == "__main__":
                         true_positives += tp
                         false_positives += fp
                         false_negatives += fn
+
+                        print(true_positives, false_positives, false_negatives)
 
                         metrics = metrics.append(
                             {
