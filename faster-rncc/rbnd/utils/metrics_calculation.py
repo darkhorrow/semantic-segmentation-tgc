@@ -47,8 +47,6 @@ def iou(ground_truth, detection, threshold=0.5):
 
     result = intersection_area / union_area
 
-    print(result)
-
     return result >= threshold
 
 

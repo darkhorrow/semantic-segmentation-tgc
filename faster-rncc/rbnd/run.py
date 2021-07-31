@@ -212,13 +212,15 @@ if __name__ == "__main__":
                                                                       predicted_bounding_boxes[:, 0:4])
 
                         if debug:
-                            print(tp, fp, fn, p, r, f1s)
+                            print('Found:')
+                            print(f'TP: {tp}\tFP: {fp}\tFN: {fn}\tPrecision: {p}\tRecall: {r}\tF1-score: {f1s}')
 
                         true_positives += tp
                         false_positives += fp
                         false_negatives += fn
 
-                        print(true_positives, false_positives, false_negatives)
+                        print(f'Global true positives: {true_positives}\tfalse positives: {false_positives}\t'
+                              f'false negatives: {false_negatives}')
 
                         metrics = metrics.append(
                             {
@@ -297,13 +299,15 @@ if __name__ == "__main__":
                                                                       predicted_bounding_boxes[:, 0:4])
 
                         if debug:
-                            print(tp, fp, fn, p, r, f1s)
+                            print('Found:')
+                            print(f'TP: {tp}\tFP: {fp}\tFN: {fn}\tPrecision: {p}\tRecall: {r}\tF1-score: {f1s}')
 
                         true_positives += tp
                         false_positives += fp
                         false_negatives += fn
 
-                        print(true_positives, false_positives, false_negatives)
+                        print(f'Global true positives: {true_positives}\tfalse positives: {false_positives}\t'
+                              f'false negatives: {false_negatives}')
 
                         metrics = metrics.append(
                             {
@@ -316,7 +320,7 @@ if __name__ == "__main__":
                         )
 
                     # Store the image with the detection
-                    print(os.path.join(output_path, os.path.basename(img_file)))
+                    print(f'Saved in {os.path.join(output_path, os.path.basename(img_file))}')
                     cv2.imwrite(os.path.join(output_path, os.path.basename(img_file)), img)
 
                 if debug:
