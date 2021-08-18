@@ -6,6 +6,7 @@ import time
 
 import cv2
 import pandas as pd
+import numpy as np
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
@@ -242,7 +243,7 @@ if __name__ == "__main__":
                         (x1, y1, x2, y2) = new_boxes[jk, :]
 
                         # Calculate coordinates in the original image and draw the detected bounding box
-                        (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio, x1, y1, x2, y2)
+                        (real_x1, real_y1, real_x2, real_y2) = get_real_coordinates(ratio[0], ratio[1], x1, y1, x2, y2)
                         cv2.rectangle(img, (real_x1, real_y1), (real_x2, real_y2), (0, 0, 255), 2)
 
                         # Detection data to txt file coordinates and confidence

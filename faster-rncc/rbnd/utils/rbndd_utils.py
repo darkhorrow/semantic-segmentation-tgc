@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 import math
 
 
@@ -225,16 +226,59 @@ def format_img_channels(img):
     return img
 
 
-def format_img(img):
+def format_img(img, width_limit=1920, height_limit=1080):
     """Formats image color channel and dimension"""
-    return format_img_channels(img), 1
+    img_shape = img.shape[:2]
+    scale = [1, 1]
+    if img_shape[0] > height_limit or img_shape[1] > width_limit:
+        reshape_img = image_resize(img, 1920, 1080)
+        reshaped_img_shape = reshape_img.shape[:2]
+        scale = np.flipud(np.divide(reshaped_img_shape, img_shape))
+        img = reshape_img
+
+    return format_img_channels(img), scale
 
 
-def get_real_coordinates(ratio, x1, y1, x2, y2):
+def get_real_coordinates(ratio_width, ratio_height, x1, y1, x2, y2):
     """Transform the bounding boxes coordinates of the rescaled image to the original"""
 
-    real_x1 = int(round(x1 // ratio))
-    real_y1 = int(round(y1 // ratio))
-    real_x2 = int(round(x2 // ratio))
-    real_y2 = int(round(y2 // ratio))
+    real_x1 = int(round(x1 // ratio_width))
+    real_y1 = int(round(y1 // ratio_height))
+    real_x2 = int(round(x2 // ratio_width))
+    real_y2 = int(round(y2 // ratio_height))
     return real_x1, real_y1, real_x2, real_y2
+
+
+def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+    """Another resize method from:
+    https://stackoverflow.com/questions/44650888/resize-an-image-without-distortion-opencv
+    """
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # calculate the ratio of the height and construct the
+        # dimensions
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # calculate the ratio of the width and construct the
+        # dimensions
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+
+    # return the resized image
+    return resized
