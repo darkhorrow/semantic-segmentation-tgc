@@ -231,7 +231,7 @@ def format_img(img, width_limit=1920, height_limit=1080):
     img_shape = img.shape[:2]
     scale = [1, 1]
     if img_shape[0] > height_limit or img_shape[1] > width_limit:
-        reshape_img = image_resize(img, 1920, 1080)
+        reshape_img = image_resize(img, min(img_shape[1], width_limit), min(img_shape[0], height_limit))
         reshaped_img_shape = reshape_img.shape[:2]
         scale = np.flipud(np.divide(reshaped_img_shape, img_shape))
         img = reshape_img
