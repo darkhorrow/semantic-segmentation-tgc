@@ -190,7 +190,7 @@ if __name__ == "__main__":
                 if df_bounding_boxes_gt_test is not None:
                     gt_bounding_boxes = df_bounding_boxes_gt_test[df_bounding_boxes_gt_test['filename'] == img_file]
                     for row in gt_bounding_boxes.itertuples():
-                        cv2.rectangle(img, (row.x_min, row.y_min), (row.x_max, row.y_max), (0, 255, 0), 2)
+                        cv2.rectangle(img, (int(row.x_min), int(row.y_min)), (int(row.x_max), int(row.y_max)), (0, 255, 0), 2)
                 # No detections performed
                 if len(bounding_boxes) == 0:
                     print('No detections for this image')
