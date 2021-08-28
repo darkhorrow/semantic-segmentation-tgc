@@ -6,16 +6,15 @@ A continuación, se explica la funcionalidad de cada fichero e información misc
 
     yolov4
     ├── results
-    │   ├── images.txt
-    │   ├── result_90.json
-    │   └── transform_90.csv
+    │   ├── custom
+    │   └── tgcrbnw 
     ├── Crop_YOLOv4_People.ipynb
     ├── README.md
     └── YOLOv4_People_Detection.ipynb
 
 <ins>**results**</ins>
 
-En este directorio se contiene ficheros obtenidos de los procesos de los *Jupyter notebook*
+En este directorio se contiene ficheros obtenidos de los procesos de los *Jupyter notebook* para los dos conjuntos de datos usados:
 
 * **images.txt**: Es el listado de imágenes. Lo usa Yolov4 para realizar múltiples predicciones en una misma ejecución.
 

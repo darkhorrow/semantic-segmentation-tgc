@@ -8,6 +8,7 @@ A continuación, se explica la funcionalidad de cada fichero e información misc
     ├── deeplab_extras
     │   ├── data_generator.py
     │   └── requirements.txt
+    ├── models
     ├── Deeplab+LIP.ipynb
     ├── README.md
     ├── UseDeeplabCustomModel.ipynb
@@ -20,6 +21,10 @@ En este directorio se contiene ficheros a sustituir dentro del repositorio de De
 * **data_generator.py**: Este fichero debe sustituirse por el original que se clona del repositorio de Deeplabv3 en *Deeplab+LIP.ipynb*. En él se define la informaciónb del conjunto de datos LIP y CIHP (no usado en la versión final del proyecto).
 
 * **requirements.txt**: Este fichero contiene todas las dependencias instaladas en el entorno de *Google Colab* con el que se desarrolló el proyecto. Puede usarse para hacer una instalación local.
+
+<ins>**deeplab_extras**</ins>
+
+Incluye tanto el modelo generado usando *Look into person* como los pesos preentrenados.
 
 <ins>**Deeplab+LIP.ipynb**</ins>
 
