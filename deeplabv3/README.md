@@ -20,8 +20,6 @@ En este directorio se contiene ficheros a sustituir dentro del repositorio de De
 
 * **data_generator.py**: Este fichero debe sustituirse por el original que se clona del repositorio de Deeplabv3 en *Deeplab+LIP.ipynb*. En él se define la informaciónb del conjunto de datos LIP y CIHP (no usado en la versión final del proyecto).
 
-* **requirements.txt**: Este fichero contiene todas las dependencias instaladas en el entorno de *Google Colab* con el que se desarrolló el proyecto. Puede usarse para hacer una instalación local.
-
 <ins>**deeplab_extras**</ins>
 
 Incluye tanto el modelo generado usando *Look into person* como los pesos preentrenados.
@@ -45,12 +43,6 @@ Este *Jupyter notebook* es el demo original de Deeplabv3 con algunas adaptacione
 ## Pasos para la instalación y ejecución de Deeplabv3 localmente
 
 Si bien estos pasos no se realizaron durante el proyecto, ya que se hizo uso de *Google Colab* junto a los *Jupyter notebook*, indican lo que se realiza en ellos y cómo se esperaría que funcionen en un entorno de Python 3 estándar.
-
-### Instalación de las dependencias
-
-En el fichero ***deeplab_extras/requirements.txt*** se encuentra un *pip freeze* tomado del entorno de Deeplab en el que funciona correctamente. Para instalar las dependencias, se usa el siguiente comando:
-
-    pip install -r requirements.txt
 
 ### Descarga y configuración de Deeplabv3
 
